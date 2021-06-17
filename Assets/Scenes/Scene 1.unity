@@ -249,16 +249,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxCards: 10
-  horizontalCardSpacing: 80
+  horizontalCardSpacing: -27
   verticalCardSpacing: 0
   drawPile: {fileID: 1327319610}
   discardPile: {fileID: 464748520}
   masterCardList:
-  - {fileID: 6285195100082331286, guid: 6b8879403548da44181f6295d4c0b57b, type: 3}
-  - {fileID: 6285195100082331286, guid: d0c516b334208d449bab536450cd5cca, type: 3}
-  - {fileID: 6285195100082331286, guid: cd88f83f97a4f444699779971a08d4ef, type: 3}
+  - {fileID: 193198456495242866, guid: 546ea4798fb68d14bb3e55b3e3e768cc, type: 3}
   cardsInHand: []
-  card: {fileID: 6285195100082331286, guid: 61c005727cb410444b4d02d93c25a9b4, type: 3}
   selectedCard: {fileID: 0}
   deck: []
 --- !u!224 &511741708
@@ -277,8 +274,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -224, y: 124}
-  m_SizeDelta: {x: 663, y: 373}
+  m_AnchoredPosition: {x: -6.25, y: 151}
+  m_SizeDelta: {x: 800, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &519420028
 GameObject:

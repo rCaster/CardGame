@@ -8,15 +8,11 @@ using System;
 
 public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IDragHandler, IPointerDownHandler, IPointerUpHandler
 {
-    public Image CardImage;
-    public List<GameObject> CardTextObjects;
-    public List<RectTransform> CardTextRects;
-
-    public Canvas CardCanvas { get; set; }
-    //public Text CardText { get; set; }
-    public int DefaultSortingOrder { get; set; }
     public float autoMoveSpeed = 10;
     public float growShrinkSpeed = 10;
+    public Canvas cardCanvas;
+    public int DefaultSortingOrder;
+    public Image CardImage;
 
     Image ColliderImage;
     RectTransform ColliderRect;
@@ -34,38 +30,39 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
         cardBehaviour = GetComponentInParent<ICard>();
         if (cardBehaviour == null)
             Debug.LogError("No behaviour for " + gameObject.transform.parent.name + " found!");
-        CardCanvas = GetComponentInParent<Canvas>();
+        cardCanvas = GetComponentInParent<Canvas>();
         ColliderImage = GetComponent<Image>();
         ColliderRect = ColliderImage.rectTransform;
-        CardTextRects = new List<RectTransform>();
-        foreach (GameObject t in CardTextObjects)
-            CardTextRects.Add(t.GetComponent<RectTransform>());
         hand = GameObject.FindGameObjectWithTag("Hand").GetComponent<Hand>();
-        CardCanvas.overrideSorting = true;
+        cardCanvas.overrideSorting = true;
         defaultColliderSize = ColliderRect.sizeDelta;
         defaultCardScale = ColliderRect.localScale;
         cardHomePosition = ColliderRect.position;
-        DefaultSortingOrder = CardCanvas.sortingOrder;
+        DefaultSortingOrder = cardCanvas.sortingOrder;
     }
 
     public void SelectCard()
     {
         if (hand != null)
             hand.selectedCard = transform.parent.gameObject;
-        CardCanvas.sortingOrder = 10;
+        cardCanvas.sortingOrder = 10;
         CardImage.rectTransform.position = new Vector2(CardImage.rectTransform.position.x, CardImage.rectTransform.position.y + CardImage.rectTransform.rect.height / 4);
-        ColliderRect.position = new Vector2(ColliderRect.position.x, ColliderRect.position.y + ColliderRect.rect.height / 4);
+        ColliderRect.position = new Vector2(ColliderRect.position.x, ColliderRect.position.y + ColliderRect.rect.height / 8);
         ColliderRect.sizeDelta = new Vector2(ColliderRect.rect.width, ColliderRect.rect.height * 1.25f);
     }
     public void DeselectCard()
     {
         ColliderRect.sizeDelta = defaultColliderSize;
         ColliderRect.position = cardHomePosition;
-        CardCanvas.sortingOrder = DefaultSortingOrder;
+        cardCanvas.sortingOrder = DefaultSortingOrder;
         if (!cardAutoMoving)
             CardImage.rectTransform.position = cardHomePosition;
     }
 
+    //for OnPointerEnter and OnPointerExit i added methods for selecting and deselecting cards.
+    //the only reason i did this is for the future if we want to add controller/touchscreen/whatever support.
+    //we can just call these methods when we want to select a card and it would behave the exact same as mousing over the card.
+    //also, "select" might not be the best term here, just the first thing i thought of. strictly means you're just looking at this specific card. not playing it or anything.
     public void OnPointerEnter(PointerEventData eventData)
     {
         SelectCard();
@@ -74,59 +71,55 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
     {
         DeselectCard();
     }
+
+    //when we click on this card we resize it by zoomMultiplier to make it easier to see/read
+    //then we make the cursor invisible just for aesthetics
+    //lastly, we get the position our mouse is at when we click and get the offset to the cards origin.
+    //this is so we can move the card around and the mouse will always be where you clicked it on the card.
     public void OnPointerDown(PointerEventData eventData)
     { 
         CardImage.rectTransform.localScale *= zoomMultiplier;
-        if (RectTransformUtility.ScreenPointToWorldPointInRectangle(ColliderRect, eventData.position, eventData.pressEventCamera, out Vector3 cardClickPosition))
-        {
-            Cursor.visible = false;
-            cardClickPosition = new Vector3(cardClickPosition.x, cardClickPosition.y, ColliderRect.position.z);
-            cardClickOffset = cardClickPosition - CardImage.rectTransform.position;
-        }
+        Cursor.visible = false;
+        Vector2 cardClickPosition = Input.mousePosition;
+        cardClickOffset = (Vector3)cardClickPosition - CardImage.rectTransform.position;
     }
-    void PlayCard()
-    {
-        cardBehaviour.Play();
-        cardBehaviour.Discard();
-    }
+
+    //when we release the click from this 
     public void OnPointerUp(PointerEventData eventData)
     {
         ColliderRect.sizeDelta = defaultColliderSize;
         CardImage.rectTransform.localScale = defaultCardScale;
-        //if (cardBehaviour.IsSingleTargetCard())
-        //{
-        //    ReturnCardToSlot();
-        //}
-        //else
-        //    PlayCard();
-
         ReturnCardToSlot();
         Cursor.visible = true;
     }
     public void OnDrag(PointerEventData eventData)
     {
-        if (RectTransformUtility.ScreenPointToWorldPointInRectangle(ColliderRect, eventData.position, eventData.pressEventCamera, out Vector3 globalMousePos))
-        {
-            CardImage.rectTransform.position = globalMousePos - cardClickOffset;
-        }
+        Vector2 newPos = Input.mousePosition - cardClickOffset;
+        CardImage.rectTransform.position = newPos;
+        ColliderRect.position = newPos;
     }
 
     public void SetPosition(Vector2 pos)
     {
         ColliderRect.position = pos;
         CardImage.rectTransform.position = pos;
-        SetHomePositionToCurrent();
     }
 
     public void SetHomePositionToCurrent()
     {
         cardHomePosition = CardImage.rectTransform.position;
     }
+
     void ReturnCardToSlot()
     {
         StartCoroutine(AutoMoveCardToPos(cardHomePosition));
-        CardCanvas.sortingOrder = DefaultSortingOrder;
+        cardCanvas.sortingOrder = DefaultSortingOrder;
     }
+
+    //slides a card from wherever it is currently at to the target position. speed can be adjusted with the autoMoveSpeed variable.
+    //this is basically just for looks. so the card doesn't just suddendly disappear and reappear in its new position in 1 frame.
+    //the only implemented use for this so far is returning the card to its spot in your hand if you drag and let go without playing the card.
+    //this will be used to move cards all over though. from the draw pile into your hand, from your hand to discard pile, etc...
     IEnumerator AutoMoveCardToPos(Vector2 targetPos)
     {
         while(true)
@@ -151,27 +144,5 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
             }
         }
         
-    }
-    public IEnumerator GrowShrink(float scale)
-    {
-        Vector2 newScale = defaultCardScale * scale;
-        while (true)
-        {
-            Vector2 difference = newScale - (Vector2)ColliderRect.localScale;
-            if (Vector2.Distance(newScale, ColliderRect.localScale) > .1f)
-            {
-                ColliderRect.localScale =(Vector2)ColliderRect.localScale + (difference * Time.deltaTime * growShrinkSpeed);
-                yield return null;
-            }        
-            else
-            {
-                ColliderRect.localScale = newScale;
-                yield break;
-            }
-        }
-    }
-    public void Discard(DiscardPile dp)
-    {
-        StartCoroutine(GrowShrink(.5f));
     }
 }

@@ -5,21 +5,16 @@ using UnityEngine.UI;
 
 public class Hand : MonoBehaviour
 {
-    public int maxCards;
-    public int horizontalCardSpacing;
-    public int verticalCardSpacing;
-
     public DrawPile drawPile;
     public DiscardPile discardPile;
     public List<GameObject> masterCardList;
     public List<GameObject> cardsInHand;
-    public GameObject selectedCard;
     public List<GameObject> deck = new List<GameObject>();
+    public GameObject selectedCard;
 
     RectTransform handRect;
-    int horizontalSpacingCheck;
-    int verticalSpacingCheck;
     Vector2 handPosCheck;
+    float horizontalCardSpacing;
 
     private void Update()
     {
@@ -28,24 +23,17 @@ public class Hand : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Return))
             DiscardHand();
 
-        if(handPosCheck != (Vector2)handRect.position)
+        if (handPosCheck != (Vector2)handRect.position)
         {
             handPosCheck = handRect.position;
-            ArrangeHand();
-        }
-        if (cardsInHand.Count > 0 && (horizontalSpacingCheck != horizontalCardSpacing || verticalSpacingCheck != verticalCardSpacing))
-        {
-            verticalSpacingCheck = verticalCardSpacing;
-            horizontalSpacingCheck = horizontalCardSpacing;
-            ArrangeHand();    
+            foreach (GameObject card in cardsInHand)
+                card.GetComponentInChildren<CardUI>().SetHomePositionToCurrent();
         }
     }
 
     private void OnEnable()
     {
-        horizontalSpacingCheck = horizontalCardSpacing;
         handRect = GetComponent<RectTransform>();
-        handRect.position = new Vector2(Screen.width/2, handRect.position.y);
         handPosCheck = handRect.position;
         selectedCard = null;
         CreateDeck();
@@ -69,24 +57,7 @@ public class Hand : MonoBehaviour
         for(int i = cardsInHand.Count-1; i >= 0; --i)
             Discard(cardsInHand[i]);       
     }
-    void ArrangeHand()
-    {
-        for (int i = 0; i < cardsInHand.Count; ++i)
-        {
-            CardUI script = cardsInHand[i].GetComponentInChildren<CardUI>();
-            float cardWidth = script.CardImage.rectTransform.rect.width;
-            float xPos = handRect.position.x + ((cardWidth + horizontalCardSpacing) * i);
-            float yPos = handRect.position.y + (verticalCardSpacing * i);
-            script.SetPosition(new Vector2(xPos, yPos));
-            script.CardCanvas.sortingOrder = i;
-            script.DefaultSortingOrder = i;
-        }
-        Vector2 lastCardPos = cardsInHand[cardsInHand.Count-1].GetComponentInChildren<CardUI>().CardImage.rectTransform.position;
-        Vector2 firstCardPos = cardsInHand[0].GetComponentInChildren<CardUI>().CardImage.rectTransform.position;
-        float handWidth = Vector2.Distance(lastCardPos, firstCardPos);
-        handRect.sizeDelta = new Vector2(handWidth, handRect.sizeDelta.y);
-        handRect.position = new Vector2((Screen.width / 2) - (handWidth / 2), handRect.position.y);
-    }
+
     void Draw(int numCards)
     {
         for(int i=0;i < numCards; ++i)
@@ -106,6 +77,37 @@ public class Hand : MonoBehaviour
         nextImage.raycastTarget = true;
         yield break;
     }
+    void AddCardToHand(GameObject c)
+    {
+        c.SetActive(true);
+        c.transform.SetParent(gameObject.transform);
+        CardUI newCardScript = c.GetComponentInChildren<CardUI>();
+        float newCardWidth = newCardScript.CardImage.rectTransform.sizeDelta.x;
+        if (cardsInHand.Count > 0)
+        {
+            CardUI prevCardScript = cardsInHand[cardsInHand.Count - 1].GetComponentInChildren<CardUI>();
+            foreach(GameObject card in cardsInHand)
+            {
+                Vector2 prevCardPosition = prevCardScript.CardImage.rectTransform.position;
+                prevCardScript.SetPosition(new Vector2(prevCardPosition.x - (newCardWidth + horizontalCardSpacing), prevCardPosition.y));
+                prevCardScript.SetHomePositionToCurrent();
+                prevCardScript = card.GetComponentInChildren<CardUI>();
+            }
+            newCardScript.SetPosition(handRect.position);
+            newCardScript.SetHomePositionToCurrent();
+        }
+        else
+        {
+            newCardScript.SetPosition(handRect.position);
+            newCardScript.SetHomePositionToCurrent();
+        }
+        cardsInHand.Add(c);
+        int newCardSortingOrder = cardsInHand.IndexOf(c);
+        newCardScript.DefaultSortingOrder = newCardSortingOrder;
+        newCardScript.cardCanvas.sortingOrder = newCardSortingOrder;
+    }
+
+    //CreateDeck() and CreateDrawPile() will be moved to a more appropriate script once it exists. GameManager or something maybe.
     void CreateDeck()
     {
         for(int i=0;i<20;++i)
@@ -116,34 +118,12 @@ public class Hand : MonoBehaviour
             deck.Add(nextCard);
         }
     }
-    void CreateDrawPile(List<GameObject> from)
+    void CreateDrawPile(List<GameObject> fromCardList)
     {
-        foreach(GameObject card in from)
+        foreach(GameObject card in fromCardList)
         {
             card.transform.SetParent(drawPile.gameObject.transform);
             drawPile.AddCard(card);
         }
     }
-    void AddCardToDeck(GameObject card)
-    {
-        deck.Add(card);
-    }
-    void AddCardToHand(GameObject c)
-    {
-        c.SetActive(true);
-        c.transform.SetParent(gameObject.transform);
-        CardUI script = c.GetComponentInChildren<CardUI>();
-        script.SetPosition(handRect.position);
-        cardsInHand.Add(c);
-        if(cardsInHand.Count > 1)
-        ArrangeHand();
-    }
-
-
-
-
-
-
-
-
 }

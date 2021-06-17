@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Defend : MonoBehaviour, ICard
+public class Attack : MonoBehaviour, ICard
 {
-    public string cardName = "Defend";
+    public string cardName = "Basic Attack";
     public int damage;
     CardUI cardUI;
     Hand hand;
@@ -14,7 +14,7 @@ public class Defend : MonoBehaviour, ICard
         gameObject.name = cardName;
         cardUI = GetComponentInChildren<CardUI>();
         if (cardUI == null)
-            Debug.LogError("No Card UI found for this card!");
+            Debug.LogError("No Card UI script found for this card!");
         hand = GameObject.FindGameObjectWithTag("Hand").GetComponent<Hand>();
     }
     public void Play()
@@ -28,7 +28,7 @@ public class Defend : MonoBehaviour, ICard
         Debug.Log("Discarded " + cardName);
     }
 
-    public bool IsSingleTargetCard()
+    public bool SingleTargetCard()
     {
         return false;
     }

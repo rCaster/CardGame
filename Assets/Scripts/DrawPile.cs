@@ -11,7 +11,6 @@ public class DrawPile : MonoBehaviour
     void OnEnable()
     {
         UI_text = gameObject.GetComponent<Text>();
-        //Debug.Log(UI_text.text);
     }
 
     public void AddCard(GameObject card)
